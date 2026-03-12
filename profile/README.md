@@ -36,7 +36,7 @@ To get started with Cadence, visit the [installation guide](https://cadenceworkf
 Explore the [Cadence documentation](https://cadenceworkflow.io/docs/get-started/) to learn how to create workflows, write activities, and deploy your applications.
 
 ### Community Support
-- **Slack**: Join our [Slack community](https://uber-cadence.slack.com/) to connect with other developers.
+- **Slack**: Join our [Slack community](https://join.slack.com/t/uber-cadence/shared_invite/zt-3sdz5oow2-TXL478KDhHvJOuUm0nItiQ) to connect with other developers.
 - **Discussions**: Participate in discussions and Q&A in the [GitHub Discussions](https://github.com/cadence-workflow/cadence/discussions).
 - **Contributing**: Read our [contributing guide](https://github.com/cadence-workflow/cadence/blob/master/CONTRIBUTING.md) to learn how you can help.
 
