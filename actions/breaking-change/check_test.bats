@@ -59,3 +59,25 @@ setup() {
   run trim "   hello world   "
   [ "$output" = 'hello world' ]
 }
+
+# Regression: a non-breaking PR in a repo that passes `paths` must not abort
+# under `set -e`. detect_reason has to return 0 with empty output when nothing
+# watched changed.
+@test "detect_reason: non-breaking with watched paths returns empty and status 0" {
+  repo="$(mktemp -d)"
+  (
+    cd "$repo"
+    git init -q; git config user.email t@t; git config user.name t
+    echo a > a.txt; git add .; git commit -qm init
+    base="$(git rev-parse HEAD)"
+    git checkout -qb pr
+    echo x >> a.txt; git add .; git commit -qm change
+    head="$(git rev-parse HEAD)"
+    PR_TITLE="fix: ordinary change" WATCH_PATHS="schema/**" \
+      BASE_SHA="$base" HEAD_SHA="$head" \
+      bash -c 'set -euo pipefail; source "'"${BATS_TEST_DIRNAME}"'/check.sh"; r="$(detect_reason)"; [[ -z "$r" ]]'
+  )
+  status=$?
+  rm -rf "$repo"
+  [ "$status" -eq 0 ]
+}

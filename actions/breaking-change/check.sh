@@ -80,9 +80,15 @@ TEMPLATE
 print_template() {
   if [[ -n "${TEMPLATE_PATH:-}" && -f "${TEMPLATE_PATH}" ]]; then
     cat "${TEMPLATE_PATH}"
-  else
-    default_template
+    return
   fi
+  # A set-but-missing template usually means the caller passed template-path but
+  # forgot to check out the repo. Warn rather than silently print the built-in
+  # copy, which can drift from the repo's canonical template.
+  if [[ -n "${TEMPLATE_PATH:-}" ]]; then
+    echo "::warning::template-path '${TEMPLATE_PATH}' not found (did the caller check out the repo?); using built-in template" >&2
+  fi
+  default_template
 }
 
 # Print the breaking reason, or nothing if the PR is not breaking.
@@ -109,7 +115,13 @@ detect_reason() {
     echo "::error::git diff failed for watched-path detection (base=${BASE_SHA} head=${HEAD_SHA})" >&2
     exit 1
   fi
-  [[ -n "$changed" ]] && printf 'changed watched path(s): %s' "$(echo "$changed" | tr '\n' ' ')"
+  if [[ -n "$changed" ]]; then
+    printf 'changed watched path(s): %s' "$(echo "$changed" | tr '\n' ' ')"
+  fi
+  # Explicit success: a trailing failed test would otherwise make the function
+  # return non-zero, and `reason="$(detect_reason)"` under `set -e` would abort
+  # main() on every non-breaking PR.
+  return 0
 }
 
 main() {

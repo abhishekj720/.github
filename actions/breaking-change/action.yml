@@ -20,10 +20,13 @@
 #         contents: read
 #         pull-requests: read
 #       steps:
-#         # Only needed when passing `paths` — watched-path detection diffs history.
+#         # Needed when passing `paths` (history diff) or `template-path`
+#         # (read from the caller's checked-out workspace).
 #         - uses: actions/checkout@v4
 #           with:
 #             fetch-depth: 0
+#         # Pin @v1 once that tag is published here (see rollout order); a caller
+#         # added before the tag exists will fail to resolve the action.
 #         - uses: cadence-workflow/.github/actions/breaking-change@v1
 #           with:
 #             paths: |
