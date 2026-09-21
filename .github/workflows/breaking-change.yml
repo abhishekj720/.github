@@ -17,6 +17,13 @@
 #       types: [opened, edited, synchronize, reopened]
 #   jobs:
 #     breaking-change:
+#       # A called workflow can only downgrade the caller's token, never elevate
+#       # it. Repos created after 2023-02-02 default to a read-only token with
+#       # pull-requests: none, so the caller must grant these or `gh pr view`
+#       # (and watched-path checkout) fail.
+#       permissions:
+#         contents: read
+#         pull-requests: read
 #       uses: cadence-workflow/.github/.github/workflows/breaking-change.yml@v1
 #       with:
 #         paths: |
@@ -53,9 +60,12 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout caller repo
+        # Only needed for watched-path diffing and reading a custom template.
+        # Title-only mode (no inputs) skips the full-history clone entirely.
+        if: inputs.paths != '' || inputs['template-path'] != ''
         uses: actions/checkout@v4
         with:
-          # Full history so watched-path detection can diff base..head.
+          # Full history so watched-path detection can diff base...head.
           fetch-depth: 0
 
       - name: Detect breaking change and require template
@@ -110,7 +120,13 @@ jobs:
               pathspecs+=(":(glob)$glob")
             done <<< "$WATCH_PATHS"
             if [[ ${#pathspecs[@]} -gt 0 ]]; then
-              changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- "${pathspecs[@]}" || true)"
+              # Three-dot (merge-base) form: count only changes the PR introduced,
+              # not commits that landed on the base branch after the fork point.
+              # Fail loudly on a git error rather than masking it as "no change".
+              if ! changed="$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA" -- "${pathspecs[@]}")"; then
+                echo "::error::git diff failed for watched-path detection (base=$BASE_SHA head=$HEAD_SHA)"
+                exit 1
+              fi
               if [[ -n "$changed" ]]; then
                 breaking=1
                 reason="changed watched path(s): $(echo "$changed" | tr '\n' ' ')"
