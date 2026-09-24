@@ -13,6 +13,16 @@
 
 set -euo pipefail
 
+# External inputs (from action.yml env). Defaulted so `set -u` is safe and so
+# shellcheck sees them as assigned when the script is checked in isolation.
+PR_NUMBER="${PR_NUMBER:-}"
+PR_TITLE="${PR_TITLE:-}"
+BASE_SHA="${BASE_SHA:-}"
+HEAD_SHA="${HEAD_SHA:-}"
+WATCH_PATHS="${WATCH_PATHS:-}"
+CHECKLIST="${CHECKLIST:-}"
+TEMPLATE_PATH="${TEMPLATE_PATH:-}"
+
 # Trim leading/trailing whitespace from a single argument.
 trim() {
   local s="$1"
@@ -24,7 +34,8 @@ trim() {
 # Exit 0 if the title carries the Conventional Commits breaking marker
 # (type(scope)!: ...); non-zero otherwise.
 title_is_breaking() {
-  [[ "$1" =~ ^[a-zA-Z]+(\([^\)]*\))?!: ]]
+  local re='^[a-zA-Z]+(\([^)]*\))?!:'
+  [[ "$1" =~ $re ]]
 }
 
 # Read watched globs (one per line) on stdin, print git ":(glob)<glob>"
@@ -44,6 +55,8 @@ missing_sections() {
   local body="$1" checklist="$2" raw item
   local old_ifs="$IFS"
   IFS=','
+  # Intentional word-split on the comma-separated checklist.
+  # shellcheck disable=SC2086
   for raw in $checklist; do
     item="$(trim "$raw")"
     [[ -z "$item" ]] && continue

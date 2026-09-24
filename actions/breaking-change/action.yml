@@ -20,13 +20,12 @@
 #         contents: read
 #         pull-requests: read
 #       steps:
-#         # Needed when passing `paths` (history diff) or `template-path`
-#         # (read from the caller's checked-out workspace).
+#         # Required when passing `paths`: fetch-depth: 0 is mandatory. The
+#         # merge-base diff needs full history, and the default shallow checkout
+#         # (depth 1) makes it fail. Also needed to read a `template-path`.
 #         - uses: actions/checkout@v4
 #           with:
 #             fetch-depth: 0
-#         # Pin @v1 once that tag is published here (see rollout order); a caller
-#         # added before the tag exists will fail to resolve the action.
 #         - uses: cadence-workflow/.github/actions/breaking-change@v1
 #           with:
 #             paths: |
@@ -35,7 +34,7 @@
 #             template-path: .github/workflows/breaking_change_pr_template.md
 name: Breaking Change Reminder
 description: >-
-  Require the breaking-change checklist in a PR body when the PR is breaking —
+  Require the breaking-change checklist in a PR body when the PR is breaking:
   either its title carries the Conventional Commits '!' marker or it changes a
   watched path.
 
@@ -43,8 +42,9 @@ inputs:
   paths:
     description: >-
       One glob per line. If the PR changes any matching file it is treated as
-      breaking. Leave empty to rely only on the '!' title marker. Passing this
-      requires the caller to check out with fetch-depth: 0 first.
+      breaking. Leave empty to rely only on the '!' title marker. If set, the
+      caller MUST check out with fetch-depth: 0 first. The merge-base diff
+      needs full history and a shallow checkout will fail.
     required: false
     default: ""
   checklist:
